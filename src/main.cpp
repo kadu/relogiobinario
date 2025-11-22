@@ -5,7 +5,7 @@
 #include <WiFiManager.h>
 #include <ESPAsyncWebServer.h>
 #include <ElegantOTA.h>
-// #include <ESPmDNS.h>
+#include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <NTPClient.h>
 
@@ -19,6 +19,7 @@
 
 // ---------- Protótipos ----------
 void mostraHora();
+void mostraIp();
 void displayBinary(const int *ledArray, int size, int number, uint32_t color);
 void flipLed();
 void click1();
@@ -38,6 +39,7 @@ Adafruit_NeoPixel strip(NUM_LEDS, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 Ticker timerStatusLed(flipLed, 1000);
 Ticker timerMostraHora(mostraHora, 1000);
+Ticker timerIPPrint(mostraIp, 5000);
 
 // ---------- Arrays das colunas ----------
 const int horas_dezena[] = {10, 11};
@@ -92,9 +94,27 @@ void setup()
   strip.clear();
   strip.show();
 
+  for (size_t i = 0; i < NUM_LEDS; i++)
+  {
+    strip.setPixelColor(i, colorFromHex("#0000FF")); // Azul durante a inicialização
+    strip.show();
+    delay(50);
+  }
+  delay(150);
+  for (size_t i = 0; i < NUM_LEDS; i++)
+  {
+    strip.setPixelColor(NUM_LEDS - i, colorFromHex("#000000")); // preto durante a inicialização
+    strip.show();
+    delay(50);
+  }
+  delay(300);
+  strip.clear();
+  strip.show();
+
   pinMode(8, OUTPUT); // LED onboard do C3 no GPIO8
   timerStatusLed.start();
   timerMostraHora.start();
+  timerIPPrint.start();
 
   button1.attachClick(click1);
   button2.attachClick(click2);
@@ -135,12 +155,14 @@ void setup()
   ElegantOTA.begin(&server);
   server.begin();
   timeClient.begin();
+  mostraIp();
 }
 
 void loop()
 {
   timerStatusLed.update();
   timerMostraHora.update();
+  timerIPPrint.update();
   button1.tick();
   button2.tick();
   button3.tick();
@@ -171,6 +193,13 @@ void mostraHora()
   displayBinary(horas_unidade, 4, h % 10, colorFromHex(COLOR_HOURS_HEX));
   displayBinary(horas_dezena, 2, h / 10, colorFromHex(COLOR_HOURS_HEX));
   strip.show();
+}
+
+void mostraIp()
+{
+  Serial.println("Conectado ao WiFi! *************************");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void displayBinary(const int *ledArray, int size, int number, uint32_t color)
