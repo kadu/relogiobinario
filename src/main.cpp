@@ -9,6 +9,7 @@
 #include <Ticker.h>
 #include <NTPClient.h>
 #include "LittleFS.h"
+#include <ESPmDNS.h>
 #if __has_include("ArduinoJson.h")
   #include <ArduinoJson.h>
   #include <AsyncJson.h>
@@ -31,6 +32,8 @@ void loadSettings();
 OneButton button1(PIN_BUTTON01, true);
 OneButton button2(PIN_BUTTON02, true);
 OneButton button3(PIN_BUTTON03, true);
+
+bool mdnsStarted = false;
 
 
 
@@ -218,6 +221,17 @@ void setup() {
   timeClient.begin();
   timerStatusLed.start();
   timerMostraHora.start();
+
+
+  if (WiFi.status() == WL_CONNECTED) {
+    if (MDNS.begin("relogiobinario")) {
+      MDNS.addService("http", "tcp", 80);
+      mdnsStarted = true;
+      Serial.println("mDNS responder started: http://relogiobinario.local");
+    } else {
+      Serial.println("Failed to start mDNS responder");
+    }
+  }
 }
 
 void loop() {
@@ -229,6 +243,16 @@ void loop() {
   timeClient.update();
   timerStatusLed.update();
   timerMostraHora.update();
+
+  if (!mdnsStarted && WiFi.status() == WL_CONNECTED) {
+    if (MDNS.begin("relogiobinario")) {
+      MDNS.addService("http", "tcp", 80);
+      mdnsStarted = true;
+      Serial.println("mDNS responder started (late): http://relogiobinario.local");
+    } else {
+      Serial.println("Retry: failed to start mDNS");
+    }
+  }
 }
 
 void click1() {
