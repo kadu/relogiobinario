@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base10 - Seu relógio binário</title>
+    <!-- Incluindo o Tailwind CSS para um estilo moderno e responsivo --><script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Definindo a fonte Inter como padrão para todo o corpo */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+        }
+
+        /* Definição da animação de rotação lenta para a engrenagem */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 15s linear infinite; /* Rotação lenta contínua */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Container Principal do Painel --><div class="w-full max-w-4xl bg-white shadow-2xl rounded-xl p-6 md:p-10 border border-gray-100">
+
+        <!-- Título Principal e Configurações --><header class="text-center mb-10 relative">
+
+            <!-- Link de Configurações (Engrenagem) --><a href="/config.html" title="Configurações do Painel"
+               class="absolute top-0 right-0 text-indigo-700 hover:text-indigo-500 transition duration-150 p-2 rounded-full hover:bg-indigo-100/50 -mt-2 -mr-2 md:-mt-4 md:-mr-4">
+                <!-- SVG de Engrenagem (Settings) Clássico --><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 animate-spin-slow">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9A1.65 1.65 0 0 0 10 3.69V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 .58 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </a>
+
+            <h1 class="text-3xl md:text-5xl font-extrabold text-indigo-700 leading-tight">
+                Base10 Digital Clock
+            </h1>
+            <p class="text-gray-500 mt-2 text-lg">Um jeito diferente e divertido de ver as horas</p>
+        </header>
+
+        <!-- Seção do Relógio Digital --><section class="mb-10 bg-indigo-600 text-white p-6 rounded-lg shadow-xl transform hover:scale-[1.01] transition duration-300">
+            <h2 class="text-xl font-semibold mb-3 border-b border-indigo-400 pb-2">
+                Relógio Digital
+            </h2>
+            <!-- Display principal da hora --><div id="clockDisplay" class="text-5xl md:text-7xl font-mono font-bold tracking-wider text-center pt-2 pb-1">
+                --:--:--
+            </div>
+            <!-- Display da data e fuso horário --><div class="text-center text-sm mt-3 opacity-90">
+                <span id="dateDisplay" class="block">--/--/----</span>
+                <span id="timezoneDisplay" class="block text-xs mt-1">Fuso Horário Local</span>
+            </div>
+        </section>
+
+        <!-- Seção de Conteúdo e Informações (Layout em Colunas) --><section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Card de Visão Geral --><div class="bg-blue-50 p-6 rounded-lg shadow-md border border-blue-200">
+                <h3 class="text-xl font-bold text-blue-700 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0h6" />
+                    </svg>
+                    Base10 Digital Clock
+                </h3>
+                <p class="text-gray-600">
+                    Bem vindo à página de configuração do seu relógio digital. Um jeito diferente e divertido de ver as horas e mostrar seus conhecimentos em números binários!
+                </p>
+            </div>
+
+            <!-- Card de Tarefas Pendentes --><div class="bg-yellow-50 p-6 rounded-lg shadow-md border border-yellow-200">
+                <h3 class="text-xl font-bold text-yellow-700 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 0v2" />
+                    </svg>
+                    Configurações Rápidas
+                </h3>
+
+                <ul class="list-disc list-inside space-y-2 text-gray-600">
+                    <li class="font-medium"><a href="/wifi">WiFi Configuration Panel</a></li>
+                    <li class="font-medium"><a href="/api/wifi/status">WiFi Status (JSON API)</a></li>
+                    <li class="font-medium"><a href="/api/settings">Base 10 Settings (JSON API)</a></li>
+                    <li class="font-medium"><a href="/api/clock">Actual clock time (JSON API)</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Rodapé (Opcional) --><footer class="mt-10 pt-6 border-t border-gray-200 text-center text-sm text-gray-400">
+            <p class="mt-1">Obrigado por apoiar os projetos makers ❤️</p>
+            <p class="mt-1"><a href="http://www.kadu.com.br" target="_blank">www.kadu.com.br</a></p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Função principal para atualizar o relógio
+        function updateClock() {
+            const now = new Date();
+
+            // 1. Formatar a hora (HH:MM:SS)
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+
+            // 2. Formatar a data (DD/MM/AAAA)
+            const day = now.getDate().toString().padStart(2, '0');
+            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Mês é zero-indexado
+            const year = now.getFullYear();
+            const dateString = `${day}/${month}/${year}`;
+
+            // 3. Obter o fuso horário (ex: GMT-3)
+            // Esta função obtém o offset do fuso horário local e o formata.
+            const timezoneString = now.toLocaleTimeString('pt-BR', { timeZoneName: 'short' }).split(' ')[2] || 'Local';
+
+
+            // Atualizar os elementos HTML
+            document.getElementById('clockDisplay').textContent = timeString;
+            document.getElementById('dateDisplay').textContent = dateString;
+            document.getElementById('timezoneDisplay').textContent = `Fuso Horário: ${timezoneString}`;
+        }
+
+        // Chamada inicial para mostrar o relógio imediatamente
+        updateClock();
+
+        // Configurar o relógio para atualizar a cada 1 segundo (1000 milissegundos)
+        setInterval(updateClock, 1000);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base10 - Configurações</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Definindo a fonte Inter como padrão para todo o corpo */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fundo cinza claro */
+        }
+        /* Estilo para a barra de progresso do brilho */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-white shadow-2xl rounded-xl p-6 md:p-10 border border-gray-100">
+
+        <header class="text-center mb-10 relative">
+
+            <a href="/" title="Voltar ao Relógio"
+               class="absolute top-0 left-0 text-gray-500 hover:text-indigo-700 transition duration-150 p-2 rounded-full hover:bg-gray-100/50 -mt-2 -ml-2 md:-mt-4 md:-ml-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+
+            <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-700 leading-tight">
+                Configurações do Base10
+            </h1>
+            <p class="text-gray-500 mt-2 text-md">Ajuste as preferências do seu relógio</p>
+        </header>
+
+        <form id="configForm" class="space-y-6">
+
+            <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                <label for="ntpServer" class="block text-sm font-medium text-indigo-700 mb-2">
+                    Servidor NTP (Network Time Protocol)
+                </label>
+                <input type="text" id="ntpServer" name="ntpServer"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:border-indigo-500 focus:ring-indigo-500"
+                       value="a.ntp.br" placeholder="Ex: pool.ntp.org ou a.ntp.br">
+                <p class="text-xs text-indigo-500 mt-1">Endereço do servidor para sincronização de hora.</p>
+            </div>
+
+            <div class="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <label for="timeZoneSelect" class="block text-sm font-medium text-blue-700 mb-2">
+                    Fuso Horário (Offset GMT)
+                </label>
+                <select id="timeZoneSelect" name="timeZoneSelect"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:border-blue-500 focus:ring-blue-500 bg-white">
+                    <option value="" disabled selected>-- Selecione ou informe manualmente --</option>
+                    <optgroup label="Fusos Horários do Brasil">
+                        <option value="-2">Fernando de Noronha (GMT-2)</option>
+                        <option value="-3" selected>Horário de Brasília (GMT-3)</option>
+                        <option value="-4">Mato Grosso/Campo Grande (GMT-4)</option>
+                        <option value="-5">Acre/Rio Branco (GMT-5)</option>
+                    </optgroup>
+                    <optgroup label="Fusos Internacionais (Exemplos)">
+                        <option value="0">Londres (GMT+0)</option>
+                        <option value="-5">Nova Iorque (GMT-5)</option>
+                        <option value="+9">Tóquio (GMT+9)</option>
+                    </optgroup>
+                    <option value="custom">Outro / Personalizado</option>
+                </select>
+
+                <div id="customTimezoneContainer" class="mt-3 hidden">
+                    <label for="customTimeZone" class="block text-xs font-medium text-blue-600 mb-1">
+                        Digite o Offset GMT em horas (Ex: -3, +5, +1.5)
+                    </label>
+                    <input type="number" step="0.5" id="customTimeZone" name="customTimeZone"
+                           class="block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:border-blue-500 focus:ring-blue-500"
+                           placeholder="Ex: -3 ou +1.5">
+                </div>
+
+                <p class="text-xs text-blue-500 mt-1">Defina o offset em relação ao GMT/UTC (GMT-3 é o padrão de Brasília).</p>
+                <input type="hidden" id="finalTimeZone" name="finalTimeZone" value="-3">
+            </div>
+
+            <div class="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+                <label for="ledBrightness" class="block text-sm font-medium text-yellow-700 mb-2 flex justify-between items-center">
+                    Brilho dos LEDs
+                    <span id="brightnessValue" class="text-lg font-bold">50%</span>
+                </label>
+                <input type="range" id="ledBrightness" name="ledBrightness" min="0" max="100" value="50" step="1"
+                       class="w-full h-2 bg-yellow-200 rounded-lg appearance-none cursor-pointer range-lg">
+                <p class="text-xs text-yellow-500 mt-1">Ajuste a intensidade do brilho do display (0 a 100).</p>
+            </div>
+
+            <div class="p-4 rounded-lg bg-red-50 border border-red-200">
+                <h3 class="text-xl font-bold text-red-700 mb-4">Configuração das Cores</h3>
+
+                <div class="flex items-center mb-4">
+                    <input id="singleColorMode" type="checkbox" name="singleColorMode" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                    <label for="singleColorMode" class="ml-2 block text-sm font-medium text-gray-700">
+                        Utilizar apenas uma cor
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                    <div>
+                        <label for="colorHour" class="block text-sm font-medium text-red-700 mb-2">
+                            Cor das Horas
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="colorHour" name="colorHour" value="#4f46e5"
+                                   class="w-10 h-10 rounded-lg border-2 border-red-300 cursor-pointer">
+                            <span id="hexHour" class="text-red-700 font-mono text-sm">#4f46e5</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="colorMinute" class="block text-sm font-medium text-red-700 mb-2">
+                            Cor dos Minutos
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="colorMinute" name="colorMinute" value="#10b981"
+                                   class="w-10 h-10 rounded-lg border-2 border-red-300 cursor-pointer">
+                            <span id="hexMinute" class="text-red-700 font-mono text-sm">#10b981</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="colorSecond" class="block text-sm font-medium text-red-700 mb-2">
+                            Cor dos Segundos
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="colorSecond" name="colorSecond" value="#f59e0b"
+                                   class="w-10 h-10 rounded-lg border-2 border-red-300 cursor-pointer">
+                            <span id="hexSecond" class="text-red-700 font-mono text-sm">#f59e0b</span>
+                        </div>
+                    </div>
+
+                </div>
+                <p class="text-xs text-red-500 mt-3">Defina as cores para Horas, Minutos e Segundos.</p>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                    Salvar Configurações
+                </button>
+            </div>
+        </form>
+
+        <footer class="mt-10 pt-6 border-t border-gray-200 text-center text-sm text-gray-400">
+            <p class="mt-1">Obrigado por apoiar os projetos makers ❤️</p>
+            <p class="mt-1"><a href="http://www.kadu.com.br" target="_blank">www.kadu.com.br</a></p>
+        </footer>
+
+    </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const brightnessRange = document.getElementById('ledBrightness');
+            const brightnessValue = document.getElementById('brightnessValue');
+            const configForm = document.getElementById('configForm');
+
+            // --- Elementos de Cores ---
+            const colorHour = document.getElementById('colorHour');
+            const colorMinute = document.getElementById('colorMinute');
+            const colorSecond = document.getElementById('colorSecond');
+            const hexHour = document.getElementById('hexHour');
+            const hexMinute = document.getElementById('hexMinute');
+            const hexSecond = document.getElementById('hexSecond');
+            const singleColorMode = document.getElementById('singleColorMode');
+
+            // --- Elementos de TimeZone ---
+            const timeZoneSelect = document.getElementById('timeZoneSelect');
+            const customTimezoneContainer = document.getElementById('customTimezoneContainer');
+            const customTimeZoneInput = document.getElementById('customTimeZone');
+            const finalTimeZoneInput = document.getElementById('finalTimeZone');
+
+            // Função para atualizar o valor hexadecimal exibido
+            function updateHexDisplay(inputElement, spanElement) {
+                spanElement.textContent = inputElement.value.toUpperCase();
+            }
+
+            // 0. CARREGAR CONFIGURAÇÕES DA API
+            async function loadSettingsFromAPI() {
+                try {
+                    const res = await fetch('/api/settings');
+                    if (res.ok) {
+                        const settings = await res.json();
+                        console.log('Configurações recebidas da API:', settings);
+
+                        // Preencher NTP Server
+                        document.getElementById('ntpServer').value = settings.ntpServer || 'pool.ntp.org';
+
+                        // Preencher TimeZone
+                        const finalTZ = settings.finalTimeZone || '-3';
+                        finalTimeZoneInput.value = finalTZ;
+
+                        // Se for um valor padrão da lista, seleciona na combo
+                        const selectOptions = Array.from(timeZoneSelect.options).map(opt => opt.value);
+                        if (selectOptions.includes(finalTZ)) {
+                            timeZoneSelect.value = finalTZ;
+                        } else {
+                            // Se for customizado, ativa o modo manual
+                            timeZoneSelect.value = 'custom';
+                            customTimeZoneInput.value = finalTZ;
+                            customTimezoneContainer.classList.remove('hidden');
+                        }
+
+                        // Preencher Brilho
+                        const brightness = parseInt(settings.ledBrightness) || 50;
+                        brightnessRange.value = brightness;
+                        brightnessValue.textContent = `${brightness}%`;
+
+                        // Preencher Cores
+                        colorHour.value = settings.colorHour || '#4f46e5';
+                        colorMinute.value = settings.colorMinute || '#10b981';
+                        colorSecond.value = settings.colorSecond || '#f59e0b';
+
+                        // Atualizar displays hexadecimais
+                        updateHexDisplay(colorHour, hexHour);
+                        updateHexDisplay(colorMinute, hexMinute);
+                        updateHexDisplay(colorSecond, hexSecond);
+
+                        // Verificar se as cores são iguais para ativar modo de cor única
+                        if (colorHour.value === colorMinute.value && colorHour.value === colorSecond.value) {
+                            singleColorMode.checked = true;
+                        }
+
+                        console.log('Configurações carregadas com sucesso:', settings);
+                    } else {
+                        console.log('Nenhuma configuração salva encontrada, usando padrões.');
+                    }
+                } catch (err) {
+                    console.error('Erro ao carregar configurações:', err);
+                }
+            }
+
+            // Carregar configurações ao inicializar a página
+            await loadSettingsFromAPI();
+
+            // 1. Lógica do TimeZone (Exibir/Ocultar campo manual)
+            function handleTimeZoneChange() {
+                if (timeZoneSelect.value === 'custom') {
+                    customTimezoneContainer.classList.remove('hidden');
+                    finalTimeZoneInput.value = customTimeZoneInput.value || '';
+                } else {
+                    customTimezoneContainer.classList.add('hidden');
+                    finalTimeZoneInput.value = timeZoneSelect.value;
+                }
+            }
+
+            // Garante que o campo de entrada manual atualiza o campo oculto
+            customTimeZoneInput.addEventListener('input', () => {
+                finalTimeZoneInput.value = customTimeZoneInput.value;
+            });
+
+            // Listener principal para o Select
+            timeZoneSelect.addEventListener('change', handleTimeZoneChange);
+
+            // 2. Lógica das Cores (Sincronização e Desativação)
+
+            // Listener para Brilho
+            brightnessRange.addEventListener('input', (event) => {
+                brightnessValue.textContent = `${event.target.value}%`;
+            });
+
+            // Listeners para Cores Individuais
+            colorHour.addEventListener('input', (event) => {
+                updateHexDisplay(colorHour, hexHour);
+                if (singleColorMode.checked) {
+                    syncColors();
+                }
+            });
+            colorMinute.addEventListener('input', () => updateHexDisplay(colorMinute, hexMinute));
+            colorSecond.addEventListener('input', () => updateHexDisplay(colorSecond, hexSecond));
+
+            // Função de sincronização de cores e desativação de campos
+            function syncColors() {
+                const isSingle = singleColorMode.checked;
+                const hourColor = colorHour.value;
+
+                if (isSingle) {
+                    colorMinute.value = hourColor;
+                    colorSecond.value = hourColor;
+                }
+
+                updateHexDisplay(colorMinute, hexMinute);
+                updateHexDisplay(colorSecond, hexSecond);
+
+                colorMinute.disabled = isSingle;
+                colorSecond.disabled = isSingle;
+
+                colorMinute.style.opacity = isSingle ? '0.5' : '1';
+                colorSecond.style.opacity = isSingle ? '0.5' : '1';
+                hexMinute.style.color = isSingle ? '#9ca3af' : '#b91c1c';
+                hexSecond.style.color = isSingle ? '#9ca3af' : '#b91c1c';
+            }
+
+            singleColorMode.addEventListener('change', syncColors);
+            syncColors();
+
+            // 3. Lógica de Envio do Formulário
+            configForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const formData = new FormData(configForm);
+                const data = Object.fromEntries(formData.entries());
+
+                if (data.singleColorMode === 'on') {
+                    data.colorMinute = data.colorHour;
+                    data.colorSecond = data.colorHour;
+                }
+
+                const finalTimeZoneValue = finalTimeZoneInput.value || '-3';
+
+                const payload = {
+                    ntpServer: data.ntpServer || 'pool.ntp.org',
+                    timeZoneSelect: data.timeZoneSelect || finalTimeZoneValue,
+                    customTimeZone: data.customTimeZone || '',
+                    finalTimeZone: finalTimeZoneValue,
+                    ledBrightness: data.ledBrightness || '50',
+                    colorHour: data.colorHour || '#4f46e5',
+                    colorMinute: data.colorMinute || data.colorHour || '#4f46e5',
+                    colorSecond: data.colorSecond || data.colorHour || '#4f46e5'
+                };
+
+                try {
+                    const res = await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        console.log('Configurações salvas com sucesso!');
+                        window.location.href = '/';
+                    } else {
+                        const text = await res.text().catch(() => `HTTP ${res.status}`);
+                        alert('Erro ao salvar: ' + text);
+                    }
+                } catch (err) {
+                    alert('Erro de rede: ' + err.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
