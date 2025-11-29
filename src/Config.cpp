@@ -3,7 +3,7 @@
 
 Config::Config()
   : ntpServer("pool.ntp.org"),
-    timeZoneOffset(-3),
+    timeZoneOffset(-3.0),
     ledBrightness(10),
     colorHour("#D2691E"),
     colorMinute("#D2691E"),
@@ -57,21 +57,10 @@ void Config::saveToFile() {
 void Config::loadFromJson(const JsonObject& obj) {
   ntpServer = obj["ntpServer"] | "pool.ntp.org";
 
-  if (obj.containsKey("finalTimeZone")) {
-    if (obj["finalTimeZone"].is<int>()) {
-      timeZoneOffset = obj["finalTimeZone"].as<int>();
-    } else {
-      timeZoneOffset = atoi(obj["finalTimeZone"].as<const char*>());
-    }
-  }
-
-  if (obj.containsKey("ledBrightness")) {
-    if (obj["ledBrightness"].is<int>()) {
-      ledBrightness = obj["ledBrightness"].as<int>();
-    } else {
-      ledBrightness = atoi(obj["ledBrightness"].as<const char*>());
-    }
-  }
+  // Usar o operador "ou" com um valor padrão. A biblioteca ArduinoJson
+  // fará a conversão de tipo (string para int) automaticamente se necessário.
+  timeZoneOffset = obj["finalTimeZone"] | -3.0;
+  ledBrightness = obj["ledBrightness"] | 10;
 
   colorHour = obj["colorHour"] | "#D2691E";
   colorMinute = obj["colorMinute"] | "#D2691E";

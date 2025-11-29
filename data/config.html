@@ -218,9 +218,11 @@
                         }
 
                         // Preencher Brilho
-                        const brightness = parseInt(settings.ledBrightness) || 50;
-                        brightnessRange.value = brightness;
-                        brightnessValue.textContent = `${brightness}%`;
+                        // Converte o valor de 0-255 (vindo da API) para 0-100 (para o slider)
+                        const brightnessRaw = parseInt(settings.ledBrightness) || 128; // Padrão 128 (50%)
+                        const brightnessPercent = Math.round((brightnessRaw / 255) * 100);
+                        brightnessRange.value = brightnessPercent;
+                        brightnessValue.textContent = `${brightnessPercent}%`;
 
                         // Preencher Cores
                         colorHour.value = settings.colorHour || '#4f46e5';
@@ -323,16 +325,20 @@
 
                 const finalTimeZoneValue = finalTimeZoneInput.value || '-3';
 
+                // Converte o brilho de 0-100 (do slider) para 0-255 (para o ESP32)
+                const brightnessPercent = parseInt(data.ledBrightness, 10) || 50;
+                const brightnessRaw = Math.round((brightnessPercent / 100) * 255);
+
                 const payload = {
                     ntpServer: data.ntpServer || 'pool.ntp.org',
-                    timeZoneSelect: data.timeZoneSelect || finalTimeZoneValue,
-                    customTimeZone: data.customTimeZone || '',
                     finalTimeZone: finalTimeZoneValue,
-                    ledBrightness: data.ledBrightness || '50',
+                    ledBrightness: brightnessRaw,
                     colorHour: data.colorHour || '#4f46e5',
+                    // Se o modo de cor única estiver ativo, as outras cores herdam da cor da hora
                     colorMinute: data.colorMinute || data.colorHour || '#4f46e5',
                     colorSecond: data.colorSecond || data.colorHour || '#4f46e5'
                 };
+                console.log('Enviando payload:', payload);
 
                 try {
                     const res = await fetch('/api/settings', {

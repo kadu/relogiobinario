@@ -83,9 +83,14 @@
                     <li class="font-medium"><a href="/api/wifi/status">WiFi Status (JSON API)</a></li>
                     <li class="font-medium"><a href="/api/settings">Base 10 Settings (JSON API)</a></li>
                     <li class="font-medium"><a href="/api/clock">Actual clock time (JSON API)</a></li>
+                    <li class="font-medium"><a href="/api/ntp-debug">Get info about NTP connection</a></li>
                 </ul>
             </div>
         </section>
+
+        <!-- Coloque estes elementos onde quiser no HTML -->
+        <div>Hora (ESP NTP): <span id="esp-time">--:--:--</span></div>
+        <div>Timezone (ESP): <span id="esp-tz">UTC+0</span></div>
 
         <!-- Rodapé (Opcional) --><footer class="mt-10 pt-6 border-t border-gray-200 text-center text-sm text-gray-400">
             <p class="mt-1">Obrigado por apoiar os projetos makers ❤️</p>
@@ -128,6 +133,22 @@
         // Configurar o relógio para atualizar a cada 1 segundo (1000 milissegundos)
         setInterval(updateClock, 1000);
 
+        async function updateEspClock() {
+            try {
+                const res = await fetch('/api/clock');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const j = await res.json();
+                document.getElementById('esp-time').textContent = j.time || '--:--:--';
+                const tz = (typeof j.timeZoneOffsetHours !== 'undefined') ? Number(j.timeZoneOffsetHours) : 0;
+                const sign = tz >= 0 ? '+' : '-';
+                document.getElementById('esp-tz').textContent = 'UTC' + sign + Math.abs(tz);
+            } catch (e) {
+                console.error('updateEspClock error', e);
+            }
+        }
+        // atualizar a cada segundo (ou ajuste)
+        setInterval(updateEspClock, 1000);
+        updateEspClock();
     </script>
 </body>
 </html>

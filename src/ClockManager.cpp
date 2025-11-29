@@ -3,7 +3,12 @@
 ClockManager::ClockManager(NTPManager* ntpMgr, TimeDisplay* timeDisp, ButtonManager* btnMgr)
   : ntpManager(ntpMgr),
     timeDisplay(timeDisp),
-    buttonManager(btnMgr) {
+    buttonManager(btnMgr),
+    operationMode(OP_MODE_CLOCK),
+    pomodoroRunning(false),
+    pomodoroDurationMs(25UL * 60UL * 1000UL), // padrão 25 minutos
+    pomodoroRemainingMs(pomodoroDurationMs),
+    pomodoroLastMillis(0) {
 }
 
 void ClockManager::update() {
@@ -12,112 +17,139 @@ void ClockManager::update() {
     return;
   }
 
-  int hours = getHours();
-  int minutes = getMinutes();
-  int seconds = getSeconds();
-  int mode = getMode();
+  if (operationMode == OP_MODE_CLOCK) {
+    // comportamento normal do relógio
+    displayFullTime();
+    return;
+  }
 
-  switch(mode) {
-    case MODE_TIME:
-      displayFullTime();
-      break;
-    case MODE_HOURS:
-      displayHoursOnly();
-      break;
-    case MODE_MINUTES:
-      displayMinutesOnly();
-      break;
-    case MODE_SECONDS:
-      displaySecondsOnly();
-      break;
-    default:
-      displayFullTime();
+  // modo POMODORO
+  unsigned long now = millis();
+  if (pomodoroRunning) {
+    if (pomodoroLastMillis == 0) pomodoroLastMillis = now;
+    unsigned long elapsed = now - pomodoroLastMillis;
+    if (elapsed > 0) {
+      if (elapsed >= pomodoroRemainingMs) {
+        pomodoroRemainingMs = 0;
+        pomodoroRunning = false;
+        pomodoroLastMillis = 0;
+        // sinal de término (pode animar LEDs)
+        timeDisplay->clear();
+        // por enquanto mostrar 00:00
+        timeDisplay->displayTime(0, 0, 0);
+        Serial.println("Pomodoro finished");
+      } else {
+        pomodoroRemainingMs -= elapsed;
+        pomodoroLastMillis = now;
+      }
+    }
+  }
+
+  // Exibir tempo restante como MM:SS (usando displayTime(0,MM,SS))
+  unsigned long remainingSec = pomodoroRemainingMs / 1000UL;
+  int minutes = remainingSec / 60UL;
+  int seconds = remainingSec % 60UL;
+  timeDisplay->displayTime(0, minutes, seconds);
+}
+
+void ClockManager::toggleOperationMode() {
+  if (operationMode == OP_MODE_CLOCK) {
+    setOperationMode(OP_MODE_POMODORO);
+  } else {
+    setOperationMode(OP_MODE_CLOCK);
+  }
+  Serial.print("Operation mode now: ");
+  Serial.println(operationMode == OP_MODE_POMODORO ? "POMODORO" : "CLOCK");
+}
+
+void ClockManager::setOperationMode(ClockManager::OperationMode m) {
+  operationMode = m;
+  // Ao entrar em modo pomodoro, resetar timer se necessário
+  if (operationMode == OP_MODE_POMODORO) {
+    resetPomodoro();
+  } else {
+    // voltar ao modo relógio limpa estado pomodoro
+    pomodoroRunning = false;
+    pomodoroRemainingMs = pomodoroDurationMs;
+    pomodoroLastMillis = 0;
   }
 }
 
-void ClockManager::setMode(int mode) {
-  if (buttonManager) {
-    buttonManager->setDisplayMode(mode);
+ClockManager::OperationMode ClockManager::getOperationMode() const {
+  return operationMode;
+}
+
+void ClockManager::startPausePomodoro() {
+  if (operationMode != OP_MODE_POMODORO) return;
+
+  if (pomodoroRunning) {
+    pausePomodoro();
+  } else {
+    startPomodoro();
   }
 }
 
-int ClockManager::getMode() const {
-  if (buttonManager) {
-    return buttonManager->getDisplayMode();
+void ClockManager::startPomodoro() {
+  if (pomodoroRemainingMs == 0) {
+    // se terminou, reset antes de iniciar
+    pomodoroRemainingMs = pomodoroDurationMs;
   }
-  return MODE_TIME;
+  pomodoroRunning = true;
+  pomodoroLastMillis = millis();
+  Serial.println("Pomodoro started");
 }
 
-void ClockManager::nextMode() {
-  int currentMode = getMode();
-  int nextMode = (currentMode + 1) % 4; // 4 modos: 0, 1, 2, 3
-  setMode(nextMode);
-  Serial.print("Display mode changed to: ");
-  Serial.println(nextMode);
+void ClockManager::pausePomodoro() {
+  pomodoroRunning = false;
+  pomodoroLastMillis = 0;
+  Serial.println("Pomodoro paused");
 }
 
-void ClockManager::previousMode() {
-  int currentMode = getMode();
-  int prevMode = (currentMode - 1 + 4) % 4; // 4 modos com wrap-around
-  setMode(prevMode);
-  Serial.print("Display mode changed to: ");
-  Serial.println(prevMode);
+void ClockManager::resetPomodoro() {
+  pomodoroRunning = false;
+  pomodoroRemainingMs = pomodoroDurationMs;
+  pomodoroLastMillis = 0;
+  Serial.println("Pomodoro reset");
 }
 
 int ClockManager::getHours() const {
-  if (ntpManager) {
-    return ntpManager->getHours();
-  }
+  if (ntpManager) return ntpManager->getHours();
   return 0;
 }
 
 int ClockManager::getMinutes() const {
-  if (ntpManager) {
-    return ntpManager->getMinutes();
-  }
+  if (ntpManager) return ntpManager->getMinutes();
   return 0;
 }
 
 int ClockManager::getSeconds() const {
-  if (ntpManager) {
-    return ntpManager->getSeconds();
-  }
+  if (ntpManager) return ntpManager->getSeconds();
   return 0;
 }
 
 void ClockManager::displayFullTime() {
-  if (timeDisplay) {
-    timeDisplay->displayTime(getHours(), getMinutes(), getSeconds());
-  }
+  timeDisplay->displayTime(getHours(), getMinutes(), getSeconds());
 }
 
 void ClockManager::displayHoursOnly() {
-  if (timeDisplay) {
-    timeDisplay->displayHours(getHours());
-  }
+  timeDisplay->displayHours(getHours());
 }
 
 void ClockManager::displayMinutesOnly() {
-  if (timeDisplay) {
-    timeDisplay->displayMinutes(getMinutes());
-  }
+  timeDisplay->displayMinutes(getMinutes());
 }
 
 void ClockManager::displaySecondsOnly() {
-  if (timeDisplay) {
-    timeDisplay->displaySeconds(getSeconds());
-  }
+  timeDisplay->displaySeconds(getSeconds());
 }
 
 void ClockManager::printStatus() {
   Serial.println("=== ClockManager Status ===");
-  Serial.print("Current Mode: ");
-  Serial.println(getMode());
-  Serial.print("Current Time: ");
-  Serial.print(getHours());
-  Serial.print(":");
-  Serial.print(getMinutes());
-  Serial.print(":");
-  Serial.println(getSeconds());
+  Serial.print("Operation Mode: ");
+  Serial.println(operationMode == OP_MODE_POMODORO ? "POMODORO" : "CLOCK");
+  Serial.print("Pomodoro running: ");
+  Serial.println(pomodoroRunning ? "Yes" : "No");
+  Serial.print("Pomodoro remaining (s): ");
+  Serial.println(pomodoroRemainingMs / 1000UL);
   Serial.println("===========================");
 }

@@ -7,17 +7,14 @@
 #include "Config.h"
 #include "LEDController.h"
 #include "LittleFS.h"
-#if __has_include("ArduinoJson.h")
-  #include <ArduinoJson.h>
-  #include <AsyncJson.h>
-  #include <AsyncMessagePack.h>
-#endif
+class NTPManager; // forward
 
 class WebServerManager {
 private:
   AsyncWebServer* server;
   Config* config;
   LEDController* ledController;
+  NTPManager* ntpManager; // novo
   const int HTTP_PORT = 80;
 
   // Métodos auxiliares privados
@@ -26,9 +23,11 @@ private:
   void handleApiClockGET(AsyncWebServerRequest* request);
   void handleApiSettingsGET(AsyncWebServerRequest* request);
   void handleApiSettingsPOST(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
+  void handleNtpDebugGET(AsyncWebServerRequest* request);  // NEW
 
 public:
-  WebServerManager(AsyncWebServer* webServerPtr, Config* configPtr, LEDController* ledControllerPtr);
+  // modificar construtor para receber NTPManager*
+  WebServerManager(AsyncWebServer* webServerPtr, Config* configPtr, LEDController* ledControllerPtr, NTPManager* ntpMgrPtr);
 
   // Inicializar endpoints
   void setupRoutes();

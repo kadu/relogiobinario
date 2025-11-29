@@ -1,9 +1,13 @@
 #include "WebServerManager.h"
+#include "NTPManager.h"
+#include <AsyncJson.h>
+#include <ArduinoJson.h>
 
-WebServerManager::WebServerManager(AsyncWebServer* webServerPtr, Config* configPtr, LEDController* ledControllerPtr)
+WebServerManager::WebServerManager(AsyncWebServer* webServerPtr, Config* configPtr, LEDController* ledControllerPtr, NTPManager* ntpMgrPtr)
   : server(webServerPtr),
     config(configPtr),
-    ledController(ledControllerPtr) {
+    ledController(ledControllerPtr),
+    ntpManager(ntpMgrPtr) {
 }
 
 String WebServerManager::getContentType(String filename) {
@@ -20,11 +24,21 @@ String WebServerManager::getContentType(String filename) {
 void WebServerManager::handleApiClockGET(AsyncWebServerRequest* request) {
   AsyncJsonResponse* response = new AsyncJsonResponse();
   JsonObject root = response->getRoot().to<JsonObject>();
-  
-  // Aqui você precisa acessar timeClient - será passado como parâmetro ou global
-  // Por enquanto retornando estrutura básica
-  root["status"] = "clock_endpoint";
-  
+
+  if (ntpManager && ntpManager->isInitialized()) {
+    root["time"] = ntpManager->getFormattedTime();
+    root["hours"] = ntpManager->getHours();
+    root["minutes"] = ntpManager->getMinutes();
+    root["seconds"] = ntpManager->getSeconds();
+    root["epoch"] = ntpManager->getEpochTime();
+    root["timeZoneOffsetHours"] = ntpManager->getTimeOffset();
+    root["ntpServer"] = ntpManager->getNTPServer();
+  } else {
+    root["error"] = "NTP not initialized";
+    root["time"] = "00:00:00";
+    root["timeZoneOffsetHours"] = config ? config->getTimeZoneOffset() : 0;
+  }
+
   response->setLength();
   request->send(response);
 }
@@ -64,23 +78,38 @@ void WebServerManager::handleApiSettingsPOST(AsyncWebServerRequest *request, uin
   }
 
   JsonObject obj = inDoc.as<JsonObject>();
+  serializeJsonPretty(obj, Serial);
 
-  // Atualizar configurações
+  // Extrair o brilho do JSON recebido
+  int newBrightness = obj["ledBrightness"] | 50; // Padrão 128 (50%) se não vier no JSON
+
   config->setNtpServer(obj["ntpServer"] | "pool.ntp.org");
-  config->setTimeZoneOffset(obj["finalTimeZone"] | -3);
-  config->setLedBrightness(obj["ledBrightness"] | 10);
+  config->setTimeZoneOffset(obj["finalTimeZone"].as<float>());
+  config->setLedBrightness(newBrightness);
   config->setColorHour(obj["colorHour"] | "#D2691E");
   config->setColorMinute(obj["colorMinute"] | "#D2691E");
   config->setColorSecond(obj["colorSecond"] | "#D2691E");
 
-  // Salvar no arquivo
+  // salvar no arquivo
   config->saveToFile();
 
-  // Atualizar brilho em tempo real
-  ledController->setBrightness(config->getLedBrightness());
+  // Aplicar o novo brilho imediatamente nos LEDs
+  if (ledController) {
+    ledController->setBrightness(newBrightness);
+  }
+
+  // atualizar NTPManager com novo servidor/offset
+  if (ntpManager) {
+    ntpManager->setNTPServer(config->getNtpServer().c_str());
+    ntpManager->setTimeOffset(config->getTimeZoneOffset() * 3600.0);
+    // Forçar atualização do NTP para aplicar o novo timezone imediatamente
+    Serial.println("Forcing NTP update to apply new timezone...");
+    ntpManager->forceUpdate();
+  }
 
   Serial.println("Settings updated and saved");
-  
+
+  // apenas responder com sucesso, sem reinício
   request->send(200, "application/json", "{\"status\":\"saved\"}");
 }
 
@@ -104,6 +133,33 @@ void WebServerManager::handleFileRequest(AsyncWebServerRequest *request) {
   }
 }
 
+void WebServerManager::handleNtpDebugGET(AsyncWebServerRequest* request) {
+  AsyncJsonResponse* response = new AsyncJsonResponse();
+  JsonObject root = response->getRoot().to<JsonObject>();
+
+  root["isInitialized"] = ntpManager ? ntpManager->isInitialized() : false;
+
+  if (ntpManager && ntpManager->isInitialized()) {
+    root["formattedTime"] = ntpManager->getFormattedTime();
+    root["epochTime"] = (long)ntpManager->getEpochTime();
+    root["hours"] = ntpManager->getHours();
+    root["minutes"] = ntpManager->getMinutes();
+    root["seconds"] = ntpManager->getSeconds();
+    root["timeOffset"] = ntpManager->getTimeOffset();
+    root["ntpServer"] = ntpManager->getNTPServer();
+
+    // Validação: epoch > 2001
+    unsigned long epoch = ntpManager->getEpochTime();
+    root["epochValid"] = (epoch > 1000000000) ? "YES" : "NO (too low)";
+
+  } else {
+    root["error"] = "NTP not initialized";
+  }
+
+  response->setLength();
+  request->send(response);
+}
+
 void WebServerManager::setupRoutes() {
   // GET /api/clock - Retorna hora atual
   server->on("/api/clock", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -123,6 +179,11 @@ void WebServerManager::setupRoutes() {
       this->handleApiSettingsPOST(request, data, len, index, total);
     }
   );
+
+  // NEW: GET /api/ntp-debug - Debug NTP
+  server->on("/api/ntp-debug", HTTP_GET, [this](AsyncWebServerRequest* request) {
+    this->handleNtpDebugGET(request);
+  });
 
   // Handler para arquivos estáticos (deve ser por último)
   server->onNotFound([this](AsyncWebServerRequest *request) {

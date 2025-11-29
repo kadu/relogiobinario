@@ -30,9 +30,11 @@ NTPManager ntpManager(&config);
 ClockManager clockManager(&ntpManager, &timeDisplay, &buttonManager);
 
 AsyncWebServer webServer(80);
-WebServerManager webServerManager(&webServer, &config, &ledController);
+WebServerManager webServerManager(&webServer, &config, &ledController, &ntpManager);
+void startNetworkServicesOnce();
 
 bool ledStatus = false;
+static bool networkServicesStarted = false;
 
 void flipLed();
 void updateClock();
@@ -41,19 +43,13 @@ Ticker timerStatusLed(flipLed, 1000);
 Ticker timerMostraHora(updateClock, 1000);
 
 void setup() {
-  if (!LittleFS.begin(true)) {
-    Serial.println("ERRO FATAL: Falha ao montar o LittleFS. Verifique as ferramentas e a particao.");
-    return;
-  }
-  Serial.println("LittleFS montado com sucesso.");
-
+  if (!LittleFS.begin(true)) return;
   Serial.begin(115200);
-  Serial.println("Hello, world!");
 
-  Serial.println("Starting WiFi Manager...");
-  wifiConfig.init(&webServer);
+  // Desabilitar logs verbosos de WiFi/UDP
+  esp_log_level_set("WiFiUdp", ESP_LOG_NONE);
+  esp_log_level_set("lwip", ESP_LOG_NONE);
 
-  // Carregar configurações
   config.loadFromFile();
 
   // Inicializar LEDs com pins do ProjectConfig
@@ -79,11 +75,16 @@ void setup() {
     ProjectConfig::getSegundosUnidadePins(), ProjectConfig::getSizeSegundosUnidade()
   );
 
-  // Inicializar NTPManager
-  ntpManager.begin();
+  ProjectConfig::printConfig();
+  config.printConfig();
+
+  // INICIALIZAR WIFI MANAGER ANTES DE CONECTAR
+  Serial.println("Starting WiFi Manager...");
+  wifiConfig.init(&webServer);
 
   // Inicializar ButtonManager
   buttonManager.init();
+  buttonManager.setClockManager(&clockManager);
 
   // Inicializar WebServer Manager
   webServerManager.begin();
@@ -91,25 +92,20 @@ void setup() {
   timerStatusLed.start();
   timerMostraHora.start();
 
-  wifiConfig.startMDNS();
-
-  ProjectConfig::printConfig();
-  config.printConfig();
   wifiConfig.printWifiStatus();
   ledController.printStatus();
   timeDisplay.printStatus();
   buttonManager.printStatus();
-  ntpManager.printStatus();
   clockManager.printStatus();
   webServerManager.printRoutes();
 }
 
 void loop() {
+  // tentar iniciar serviços de rede quando WiFi estiver pronto
+  startNetworkServicesOnce();
+
   // Atualizar botões
   buttonManager.update();
-
-  // Atualizar NTP
-  ntpManager.update();
 
   timerStatusLed.update();
   timerMostraHora.update();
@@ -124,4 +120,16 @@ void flipLed() {
 
 void updateClock() {
   clockManager.update();
+}
+
+void startNetworkServicesOnce() {
+  if (networkServicesStarted) return;
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  // iniciar NTP e mDNS agora que WiFi/lwIP estão prontos
+  ntpManager.begin();
+  wifiConfig.startMDNS();
+  networkServicesStarted = true;
+
+  Serial.println("Network services started (NTP, mDNS)");
 }

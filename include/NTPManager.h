@@ -23,6 +23,9 @@ public:
   // Atualizar hora (chamar no loop)
   void update();
 
+  // Forçar atualização imediata
+  void forceUpdate();
+
   // Getters de tempo
   int getHours() const;
   int getMinutes() const;

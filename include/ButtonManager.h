@@ -5,6 +5,7 @@
 #include <OneButton.h>
 #include "TimeDisplay.h"
 #include "LEDController.h"
+class ClockManager; // forward declaration
 
 typedef void (*ButtonCallback)();
 
@@ -16,6 +17,7 @@ private:
 
   TimeDisplay* timeDisplay;
   LEDController* ledController;
+  ClockManager* clockManager; // nova referência
 
   // Variável de controle de modo
   int displayMode;
@@ -37,7 +39,11 @@ public:
   // Métodos públicos para callbacks
   void handleButton1Click();
   void handleButton2Click();
+  void handleButton2LongPress(); // novo: long-press do botão 2
   void handleButton3Click();
+
+  // Setter para ligar ao ClockManager
+  void setClockManager(ClockManager* cm) { clockManager = cm; }
 
   // Getters
   int getDisplayMode() const { return displayMode; }
